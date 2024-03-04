@@ -1,0 +1,8 @@
+[package]
+name = "reaprs_simple"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reaprs = {path = "../../../reaprs"}
+fastrand = "2.0.1"

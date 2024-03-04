@@ -1,0 +1,19 @@
+[package]
+name = "reaprs"
+version = "0.1.0"
+edition = "2021"
+authors = ["FlareFlo"]
+license = "MIT"
+
+[lib]
+name = "reaprs"
+path = "src/lib.rs"
+
+[[bin]]
+name = "reaprs-server"
+path = "src/main.rs"
+
+[dependencies]
+human_bytes = { version = "0.4", features = ["fast"] }
+musli-wire = { version = "0.0.96", features = []}
+musli = "0.0.96"
