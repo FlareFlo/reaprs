@@ -1,11 +1,12 @@
-use std::alloc::{GlobalAlloc, Layout, System};
-use std::sync::atomic::{AtomicBool, AtomicUsize};
-use std::sync::atomic::Ordering::Relaxed;
-use std::sync::mpsc::Sender;
-use std::sync::Mutex;
-use crate::hosted::spawn_sender;
+#![feature(allocator_api)]
 
-use human_bytes::human_bytes;
+use std::alloc::{GlobalAlloc, Layout, System};
+use std::sync::atomic::{AtomicBool};
+use std::sync::atomic::Ordering::Relaxed;
+use std::sync::{OnceLock};
+use crate::hosted::spawn_sender;
+use crate::hosted::PacketChannel;
+
 use crate::packet::Packet;
 
 pub struct Reaprs;
@@ -14,7 +15,7 @@ pub mod packet;
 pub mod hosted;
 
 static TRACKING: AtomicBool = AtomicBool::new(false);
-static SENDER: Mutex<Option<Sender<Packet>>> = Mutex::new(None);
+static SENDER: OnceLock<PacketChannel> = OnceLock::new();
 
 unsafe impl GlobalAlloc for Reaprs {
 	unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
@@ -36,16 +37,15 @@ unsafe impl GlobalAlloc for Reaprs {
 }
 
 fn send_packet(packet: Packet) {
-	println!("{}", "Sending");
-	TRACKING.store(false, Relaxed);
-	let mut lock = SENDER.lock().unwrap();
-	lock.as_mut().map(|s|s.send(packet).unwrap());
-	drop(lock);
-	TRACKING.store(true, Relaxed);
+	let cell = SENDER.get().unwrap();
+	let mut lock = cell.0.lock().unwrap();
+	lock.push_back(packet);
+	cell.1.notify_all();
+
 }
 
 pub fn init() {
 	let sender = spawn_sender();
-	*SENDER.lock().unwrap() = Some(sender);
+	SENDER.set(sender).unwrap();
 	TRACKING.store(true, Relaxed);
 }

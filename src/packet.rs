@@ -1,4 +1,3 @@
-use std::alloc::Layout;
 use musli::{Encode, Decode};
 
 
