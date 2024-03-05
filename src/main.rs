@@ -6,14 +6,13 @@ use reaprs::packet::Packet;
 fn main() {
 	let listener = TcpListener::bind((Ipv4Addr::new(127,0,0,1), 8080)).unwrap();
 
-	let (mut stream, _) = listener.accept().unwrap();
+	let (stream, _) = listener.accept().unwrap();
+	let mut sock = tungstenite::accept(stream).unwrap();
 	println!("{}", "Client connected!");
 	loop {
-		let mut message = vec![];
-		let count = stream.read_to_end(&mut message).unwrap();
-		if count == 0 { continue };
+		let message = sock.read().unwrap();
 
-		let parsed: Packet = musli_wire::decode(message.as_slice()).unwrap();
+		let parsed: Packet = musli_wire::decode(message.into_data().as_ref()).unwrap();
 
 		match parsed {
 			Packet::Hello => {
