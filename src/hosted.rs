@@ -4,16 +4,13 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::spawn;
 use std::time::Duration;
-use tungstenite::Message;
 use crate::packet::Packet;
 
 pub type PacketChannel = Arc<(Mutex<VecDeque<crate::packet::Packet, System>>, Condvar)>;
 
 pub (crate) fn spawn_sender() -> PacketChannel{
-	let (mut sock, response) = tungstenite::connect("ws://localhost:8080").unwrap();
-	let mut msg: Vec<u8, System> = Vec::with_capacity_in(16, System);
-	musli_wire::encode(&mut msg,&Packet::Hello).unwrap();
-	sock.write(Message::Binary(msg));
+	let mut sock = TcpStream::connect_timeout(&SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127,0,0,1)), 8080), Duration::from_secs(1)).unwrap();
+	musli_wire::to_writer(&mut sock, &Packet::Hello).unwrap();
 	let packets: PacketChannel= Arc::new((Mutex::new(VecDeque::with_capacity_in(4096, System)), Condvar::new()));
 
 	let t = packets.clone();
